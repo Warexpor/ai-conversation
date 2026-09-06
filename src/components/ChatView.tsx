@@ -1,0 +1,124 @@
+import { useEffect, useRef, useState, useCallback } from "react";
+import MessageBubble from "./MessageBubble";
+import type { InnerState, Message } from "../types";
+
+interface Props {
+  messages: Message[];
+  tick: number;
+  isThinking: boolean;
+  thinkingAgent?: string | null;
+  config?: InnerState | null;
+  showThoughtsUi?: boolean;
+  onStartFirst?: (text: string) => void;
+  firstDraft?: string;
+  onFirstDraftChange?: (t: string) => void;
+  onDeleteMessage?: (agent: string, turn: number, created_at: number) => void;
+}
+
+export default function ChatView({
+  messages,
+  tick,
+  isThinking,
+  thinkingAgent,
+  config,
+  showThoughtsUi = true,
+  onStartFirst,
+  firstDraft = "",
+  onFirstDraftChange,
+  onDeleteMessage,
+}: Props) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
+  const [autoScroll, setAutoScroll] = useState(true);
+  const prevLen = useRef(0);
+
+  const onScroll = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    setAutoScroll(el.scrollHeight - el.scrollTop - el.clientHeight < 90);
+  }, []);
+
+  useEffect(() => {
+    if (autoScroll) {
+      bottomRef.current?.scrollIntoView({
+        behavior: messages.length > prevLen.current ? "smooth" : "auto",
+      });
+    }
+    prevLen.current = messages.length;
+  }, [messages, autoScroll]);
+
+  const streamLen = messages.reduce(
+    (n, m) => n + (m.streaming ? m.content.length : 0),
+    0,
+  );
+  useEffect(() => {
+    if (autoScroll) bottomRef.current?.scrollIntoView({ behavior: "auto" });
+  }, [streamLen, autoScroll]);
+
+  if (messages.length === 0) {
+    return (
+      <div className="empty">
+        <div className="empty-card">
+          <h2>Open the booth</h2>
+          <p>
+            Drop a scene, a question, or a first line. Your agents take turns
+            with full context, streaming, and optional director notes.
+          </p>
+          <div className="empty-box">
+            <textarea
+              value={firstDraft}
+              onChange={(e) => onFirstDraftChange?.(e.target.value)}
+              placeholder="Hey… you two wake up in a diner at 3am. The jukebox only plays one song."
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                  e.preventDefault();
+                  onStartFirst?.(firstDraft);
+                }
+              }}
+            />
+            <div className="empty-actions">
+              <span className="mono-cap">Ctrl+Enter · begin</span>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() => onStartFirst?.(firstDraft)}
+              >
+                Begin
+              </button>
+            </div>
+          </div>
+          <p className="empty-hint mono-cap">
+            S settings · B chats · N step · ? shortcuts
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div ref={scrollRef} onScroll={onScroll} className="chat">
+      <div className="chat-inner">
+        {messages.map((msg, i) => (
+          <MessageBubble
+            // Stable key — do NOT flip on streaming end (remounts scramble the stream UI)
+            key={`${msg.agent}-${msg.turn}-${msg.created_at || i}`}
+            message={msg}
+            tick={tick}
+            config={config}
+            showThoughtsUi={showThoughtsUi}
+            onDelete={onDeleteMessage}
+          />
+        ))}
+        {isThinking && (
+          <div className="thinking">
+            <span className="d" />
+            <span className="d" style={{ animationDelay: "0.2s" }} />
+            <span className="d" style={{ animationDelay: "0.4s" }} />
+            {thinkingAgent ? `${thinkingAgent} is writing` : "Writing"}
+          </div>
+        )}
+        <div ref={bottomRef} />
+      </div>
+    </div>
+  );
+}

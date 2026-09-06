@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none" shape-rendering="geometricPrecision">
+  <rect width="32" height="32" fill="#000"/>
+  <!-- Bold constellation: bigger figure, thicker strokes, larger nodes -->
+  <path d="M16 7.5 L6.5 25.5 L25.5 25.5 Z" stroke="#fff" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round" fill="none"/>
+  <circle cx="16" cy="7.5" r="4" fill="#fff"/>
+  <circle cx="6.5" cy="25.5" r="4" fill="#fff"/>
+  <circle cx="25.5" cy="25.5" r="4" fill="#fff"/>
+</svg>

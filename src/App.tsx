@@ -1,0 +1,259 @@
+import { useCallback, useEffect, useRef, useState } from "react";
+import ChatView from "./components/ChatView";
+import ControlBar from "./components/ControlBar";
+import SettingsSidebar from "./components/SettingsSidebar";
+import NarrateBar from "./components/NarrateBar";
+import ChatRail from "./components/ChatRail";
+import ShortcutsModal from "./components/ShortcutsModal";
+import { useAppKeyboard } from "./hooks/useAppKeyboard";
+import { useConversationApp } from "./hooks/useConversationApp";
+import {
+  PREF_KEYS,
+  readBoolPref,
+  readZoom,
+  writeBoolPref,
+  writeZoom,
+} from "./lib/config";
+import { agentLabel, nextAgentId, totalTokenUsage } from "./types";
+
+function App() {
+  const app = useConversationApp();
+  const {
+    toast,
+    stream,
+    config,
+    pushConfig,
+    firstDraft,
+    setFirstDraft,
+    narration,
+    setNarration,
+    chats,
+    activeChatId,
+    tick,
+    refreshChats,
+  } = app;
+
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
+  const [railOpen, setRailOpen] = useState(() =>
+    readBoolPref(PREF_KEYS.railOpen, true),
+  );
+  const [showThoughtsUi, setShowThoughtsUi] = useState(() =>
+    readBoolPref(PREF_KEYS.showThoughts, true),
+  );
+  const [zoom, setZoom] = useState(readZoom);
+  const [zoomMsg, setZoomMsg] = useState("");
+  const zoomTimer = useRef<ReturnType<typeof setTimeout>>();
+
+  useEffect(() => writeBoolPref(PREF_KEYS.railOpen, railOpen), [railOpen]);
+  useEffect(
+    () => writeBoolPref(PREF_KEYS.showThoughts, showThoughtsUi),
+    [showThoughtsUi],
+  );
+  useEffect(() => writeZoom(zoom), [zoom]);
+
+  const showZoomMsg = useCallback((val: number) => {
+    if (zoomTimer.current) clearTimeout(zoomTimer.current);
+    setZoomMsg(`${Math.round(val * 100)}%`);
+    zoomTimer.current = setTimeout(() => setZoomMsg(""), 1200);
+  }, []);
+
+  const handleStartFirst = useCallback(
+    async (text: string) => {
+      const result = await app.handleStartFirst(text);
+      if (result?.needSettings) setSettingsOpen(true);
+    },
+    [app],
+  );
+
+  useAppKeyboard({
+    mode: config?.mode,
+    status: stream.status,
+    settingsOpen,
+    helpOpen,
+    railOpen,
+    onToggleSettings: () => setSettingsOpen((p) => !p),
+    onToggleRail: () => setRailOpen((p) => !p),
+    onToggleHelp: () => setHelpOpen((p) => !p),
+    onExport: app.handleExport,
+    onSaveChat: app.handleSaveChat,
+    onStop: app.handleStop,
+    onStep: app.handleStep,
+    onToggleRun: app.handleToggle,
+    onReset: app.handleReset,
+    onCloseHelp: () => setHelpOpen(false),
+    onCloseSettings: () => setSettingsOpen(false),
+    onCloseRail: () => setRailOpen(false),
+    onZoomIn: () =>
+      setZoom((z) => {
+        const next = Math.min(2, Math.round((z + 0.1) * 10) / 10);
+        showZoomMsg(next);
+        return next;
+      }),
+    onZoomOut: () =>
+      setZoom((z) => {
+        const next = Math.max(0.5, Math.round((z - 0.1) * 10) / 10);
+        showZoomMsg(next);
+        return next;
+      }),
+    onZoomReset: () => {
+      setZoom(1);
+      showZoomMsg(1);
+    },
+  });
+
+  const thinkingName =
+    config && stream.status === "Running"
+      ? agentLabel(nextAgentId(config, stream.turnCount), config)
+      : null;
+  const { used: tokenUsed, capacity: tokenCapacity } = totalTokenUsage(
+    stream.messages,
+    config,
+  );
+
+  return (
+    <div
+      className={[
+        "app",
+        settingsOpen ? "settings-open" : "",
+        railOpen ? "" : "rail-closed",
+      ]
+        .filter(Boolean)
+        .join(" ")}
+      style={{ zoom }}
+    >
+      {railOpen && (
+        <ChatRail
+          chats={chats}
+          activeId={activeChatId}
+          onNew={app.handleReset}
+          onSelect={app.handleSelectChat}
+          onDelete={app.handleDeleteChat}
+          onClose={() => setRailOpen(false)}
+          onRename={refreshChats}
+        />
+      )}
+
+      <div className="main">
+        <header className="topbar">
+          <div className="brand-text">
+            <p className="brand-mark">AI Conversation</p>
+            <span className="topbar-sub">
+              {config
+                ? `${config.bot_count >= 3 ? 3 : 2} agents · ${config.mode}`
+                : "loading…"}
+            </span>
+          </div>
+          <div className="spacer" />
+          <button
+            type="button"
+            className="btn btn-ghost"
+            onClick={() => setRailOpen((p) => !p)}
+            title="Toggle chats (B)"
+          >
+            {railOpen ? "Hide chats" : "Show chats"}
+          </button>
+          <button
+            type="button"
+            className="btn btn-ghost"
+            onClick={() => setSettingsOpen((p) => !p)}
+            title="Toggle settings (S)"
+          >
+            {settingsOpen ? "Hide settings" : "Settings"}
+          </button>
+          <button
+            type="button"
+            className="btn btn-ghost btn-icon"
+            onClick={() => setHelpOpen(true)}
+            title="Shortcuts (?)"
+            aria-label="Keyboard shortcuts"
+          >
+            ?
+          </button>
+        </header>
+
+        {toast.message !== null && (
+          <div
+            className={`toast ${toast.leaving ? "leaving" : ""}`}
+            role="status"
+          >
+            <span className="toast-text">{toast.message}</span>
+            <button
+              type="button"
+              className="btn btn-ghost btn-sm"
+              onClick={toast.clear}
+              aria-label="Dismiss"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
+
+        {zoomMsg && (
+          <div className="zoom-badge" role="status" aria-live="polite">
+            {zoomMsg}
+          </div>
+        )}
+
+        <ChatView
+          messages={stream.messages}
+          tick={tick}
+          isThinking={
+            stream.isThinking && !stream.messages.some((m) => m.streaming)
+          }
+          thinkingAgent={thinkingName}
+          config={config}
+          showThoughtsUi={showThoughtsUi}
+          firstDraft={firstDraft}
+          onFirstDraftChange={setFirstDraft}
+          onStartFirst={handleStartFirst}
+          onDeleteMessage={app.handleDeleteMessage}
+        />
+
+        {stream.messages.length > 0 && (
+          <NarrateBar
+            config={config}
+            turnCount={stream.turnCount}
+            value={narration}
+            onChange={setNarration}
+            onCommit={app.handleNarrationCommit}
+            disabled={stream.status === "Running"}
+          />
+        )}
+
+        <ControlBar
+          status={stream.status}
+          turnCount={stream.turnCount}
+          maxTurns={config?.max_turns ?? 40}
+          mode={config?.mode ?? "step"}
+          onToggle={app.handleToggle}
+          onStep={app.handleStep}
+          onStop={app.handleStop}
+          onReset={app.handleReset}
+          onExport={app.handleExport}
+          onModeChange={app.handleModeChange}
+          onSaveChat={app.handleSaveChat}
+          tokenUsed={tokenUsed}
+          tokenCapacity={tokenCapacity}
+          retryTarget={stream.lastFailed.current}
+          onRetry={app.handleRetry}
+        />
+      </div>
+
+      {config && (
+        <SettingsSidebar
+          open={settingsOpen}
+          config={config}
+          onSave={pushConfig}
+          onClose={() => setSettingsOpen(false)}
+          showThoughtsUi={showThoughtsUi}
+          onShowThoughtsUiChange={setShowThoughtsUi}
+        />
+      )}
+
+      <ShortcutsModal open={helpOpen} onClose={() => setHelpOpen(false)} />
+    </div>
+  );
+}
+
+export default App;

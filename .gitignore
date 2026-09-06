@@ -1,0 +1,36 @@
+# dependencies
+node_modules/
+
+# build outputs
+dist/
+src-tauri/target/
+*.local
+
+# env / secrets
+.env
+.env.*
+!.env.example
+
+# logs & caches
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+*.swp
+*~
+
+# editor / IDE
+.idea/
+.vscode/
+*.code-workspace
+
+# tauri / OS
+src-tauri/gen/schemas/*.json.bak
+src-tauri/WixTools/
+*.msi
+*.nsis
+*.dmg
+*.AppImage
+
+# test / smoke leftovers
+*.pdb
