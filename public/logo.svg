@@ -1,8 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none" shape-rendering="geometricPrecision">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
   <rect width="32" height="32" fill="#000"/>
-  <!-- Bold constellation: bigger figure, thicker strokes, larger nodes -->
-  <path d="M16 7.5 L6.5 25.5 L25.5 25.5 Z" stroke="#fff" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round" fill="none"/>
-  <circle cx="16" cy="7.5" r="4" fill="#fff"/>
-  <circle cx="6.5" cy="25.5" r="4" fill="#fff"/>
-  <circle cx="25.5" cy="25.5" r="4" fill="#fff"/>
+  <!-- Two vertical bars interrupted by a diagonal slash -->
+  <path fill="#fff" fill-rule="evenodd" d="
+    M8 5h6v9.2L7.2 27H2.8l6.6-11.5V5zm10 0h6v10.5L30 27h-4.4L18 15.2V5z
+    M3.5 26.5 L28.5 5.5 L29.5 6.7 L4.5 27.7 Z
+  "/>
 </svg>

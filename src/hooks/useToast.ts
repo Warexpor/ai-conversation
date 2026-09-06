@@ -3,7 +3,7 @@ import { useCallback, useRef, useState } from "react";
 export function useToast() {
   const [message, setMessage] = useState<string | null>(null);
   const [leaving, setLeaving] = useState(false);
-  const timer = useRef<ReturnType<typeof setTimeout>>();
+  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const clear = useCallback(() => {
     if (timer.current) clearTimeout(timer.current);

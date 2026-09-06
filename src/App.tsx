@@ -43,7 +43,7 @@ function App() {
   );
   const [zoom, setZoom] = useState(readZoom);
   const [zoomMsg, setZoomMsg] = useState("");
-  const zoomTimer = useRef<ReturnType<typeof setTimeout>>();
+  const zoomTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   useEffect(() => writeBoolPref(PREF_KEYS.railOpen, railOpen), [railOpen]);
   useEffect(
