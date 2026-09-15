@@ -61,9 +61,7 @@ function MessageBubble({
       <div className="msg-body">
         <div className="msg-meta">
           <span className="msg-name">{label}</span>
-          {isStream ? (
-            <span className="msg-live">live</span>
-          ) : (
+          {!isStream && (
             <RelativeTime at={message.created_at || Date.now()} />
           )}
           <div className="msg-actions">
@@ -119,9 +117,7 @@ function MessageBubble({
               <IconChevron />
               <span className="thoughts-label">Thoughts</span>
               {isStream && !message.content && (
-                <span className="msg-live" style={{ marginLeft: 6 }}>
-                  thinking
-                </span>
+                <span className="thoughts-pending">thinking</span>
               )}
             </button>
             {thoughtsOpen && (

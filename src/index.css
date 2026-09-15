@@ -9,8 +9,9 @@
   --panel: rgba(28, 28, 28, 0.72);
   --panel-2: rgba(34, 34, 34, 0.58);
   --elev: rgba(38, 38, 38, 0.78);
-  --line: rgba(255, 255, 255, 0.09);
-  --line-2: rgba(255, 255, 255, 0.16);
+  /* Hairlines a touch brighter — WebKitGTK softens borders on dark lacquer. */
+  --line: rgba(255, 255, 255, 0.12);
+  --line-2: rgba(255, 255, 255, 0.2);
   --text: #ececec;
   --text-2: #c8c8c8;
   --mute: #8f8f8f;
@@ -27,12 +28,15 @@
   --font-read: "Inter", system-ui, sans-serif;
   --mono: "JetBrains Mono", ui-monospace, monospace;
   --hairline: 1px solid var(--line);
-  --glass: rgba(18, 18, 18, 0.62);
-  --glass-strong: rgba(16, 16, 16, 0.92);
-  --blur: blur(16px) saturate(140%);
-  --blur-float: blur(14px) saturate(140%);
-  --shine: inset 0 1px 0 rgba(255, 255, 255, 0.12);
-  --glow: 0 16px 44px rgba(0, 0, 0, 0.22);
+  /* Glass hierarchy: primary chrome can blur; secondary panels stay opaque.
+     Opacities skewed high so text stays legible if blur is weak/no-op (GTK). */
+  --glass: rgba(16, 16, 16, 0.78);
+  --glass-strong: rgba(14, 14, 14, 0.96);
+  --blur: blur(14px) saturate(130%);
+  --blur-float: blur(12px) saturate(130%);
+  --blur-scrim: blur(8px);
+  --shine: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  --glow: 0 16px 44px rgba(0, 0, 0, 0.28);
   --btn-face: #f3f3f3;
   --btn-face-2: #dcdcdc;
   /* Motion — present, not showy */
@@ -790,10 +794,10 @@ body,
   margin-inline: -1px;
 }
 .btn:hover:not(:disabled) {
-  transform: translateY(-1px);
+  /* Color/border only — lift fights backdrop-filter compositing on WebKitGTK. */
 }
 .btn:active:not(:disabled) {
-  transform: translateY(0.5px) scale(0.985);
+  transform: scale(0.985);
 }
 .btn:disabled {
   cursor: not-allowed;
@@ -837,12 +841,11 @@ body,
   padding: 0 12px 0 10px;
   gap: 7px;
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.045);
+  background: rgba(255, 255, 255, 0.06);
   color: var(--text-2);
-  border-color: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.14);
   box-shadow: var(--shine);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  /* No per-control blur — chrome sits on already-glass topbar/dock. */
 }
 .btn-chrome:hover:not(:disabled) {
   color: var(--text);
@@ -879,30 +882,26 @@ body,
   gap: 7px;
 }
 .btn-ghost {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(255, 255, 255, 0.05);
   color: var(--text-2);
-  border-color: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.12);
   box-shadow: var(--shine);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
 }
 .btn-ghost:hover:not(:disabled) {
   color: var(--text);
-  border-color: rgba(255, 255, 255, 0.18);
-  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.09);
 }
 .btn-ghost[aria-pressed="true"] {
   color: var(--text);
   border-color: rgba(255, 255, 255, 0.38);
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.09);
 }
 .btn-danger {
-  background: rgba(255, 95, 87, 0.1);
+  background: rgba(255, 95, 87, 0.12);
   color: var(--danger);
-  border-color: rgba(255, 95, 87, 0.38);
+  border-color: rgba(255, 95, 87, 0.42);
   box-shadow: var(--shine);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
 }
 .btn-danger:hover:not(:disabled) {
   background: rgba(255, 95, 87, 0.18);
@@ -1000,11 +999,9 @@ body,
 @keyframes msg-in {
   from {
     opacity: 0;
-    transform: translateY(8px);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
   }
 }
 .msg-avatar {
@@ -1056,13 +1053,21 @@ body,
   font-family: var(--font);
 }
 .msg-live {
+  /* Kept for any residual markup; streaming uses caret only. */
   font-size: 11px;
   color: var(--live);
   font-family: var(--font);
   font-weight: 500;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  animation: pulse 1.5s var(--ease-soft) infinite;
+}
+.thoughts-pending {
+  margin-left: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--mute);
+  text-transform: none;
 }
 .msg-actions {
   margin-left: auto;
@@ -1152,17 +1157,8 @@ body,
   box-shadow: var(--shine);
 }
 .msg.streaming .msg-avatar {
-  box-shadow: 0 0 0 1px rgba(245, 78, 0, 0.45), 0 0 18px rgba(245, 78, 0, 0.22);
-  animation: live-ring 2.4s var(--ease-soft) infinite;
-}
-@keyframes live-ring {
-  0%,
-  100% {
-    box-shadow: 0 0 0 1px rgba(245, 78, 0, 0.32), 0 0 10px rgba(245, 78, 0, 0.1);
-  }
-  50% {
-    box-shadow: 0 0 0 1px rgba(245, 78, 0, 0.62), 0 0 20px rgba(245, 78, 0, 0.24);
-  }
+  /* Static live ring — caret is the motion signal. */
+  box-shadow: 0 0 0 1px rgba(245, 78, 0, 0.5), 0 0 12px rgba(245, 78, 0, 0.16);
 }
 
 /* empty */
@@ -1188,11 +1184,9 @@ body,
 @keyframes hero-in {
   from {
     opacity: 0;
-    transform: translateY(16px) scale(0.985);
   }
   to {
     opacity: 1;
-    transform: translateZ(0);
   }
 }
 .empty-logo {
@@ -1321,10 +1315,10 @@ body,
 }
 .jump-latest:hover {
   border-color: var(--line-2);
-  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.08);
 }
 .jump-latest:active {
-  transform: translateY(0);
+  background: rgba(255, 255, 255, 0.06);
 }
 .jump-latest-space {
   flex-shrink: 0;
@@ -1405,7 +1399,6 @@ body,
   color: var(--text);
   border-color: rgba(255, 255, 255, 0.3);
   background: rgba(255, 255, 255, 0.07);
-  transform: translateY(-1px);
 }
 .hint-toggle:disabled {
   opacity: 0.4;
@@ -1426,36 +1419,30 @@ body,
   backdrop-filter: var(--blur-float);
   -webkit-backdrop-filter: var(--blur-float);
   box-shadow: var(--shine), var(--glow);
-  animation: dock-in 0.42s var(--ease-out) both;
+  animation: dock-in 0.36s var(--ease-out) both;
 }
 @keyframes dock-in {
   from {
     opacity: 0;
-    transform: translateY(12px);
   }
   to {
     opacity: 1;
-    transform: translateZ(0);
   }
 }
 @keyframes composer-in {
   from {
     opacity: 0;
-    transform: translateY(8px) scale(0.992);
   }
   to {
     opacity: 1;
-    transform: translateZ(0);
   }
 }
 @keyframes float-in {
   from {
     opacity: 0;
-    transform: translateY(8px) scale(0.96);
   }
   to {
     opacity: 1;
-    transform: translateY(0) scale(1);
   }
 }
 .dock-menu {
@@ -1995,9 +1982,7 @@ body,
   gap: 8px;
   padding: 8px 16px;
   border-radius: 999px;
-  background: var(--glass);
-  backdrop-filter: var(--blur);
-  -webkit-backdrop-filter: var(--blur);
+  background: var(--glass-strong);
   border: var(--hairline);
   color: var(--mute);
   font-size: 12px;
@@ -2006,7 +1991,7 @@ body,
   letter-spacing: 0.02em;
   text-transform: none;
   box-shadow: var(--shine);
-  animation: float-in 0.36s var(--ease-out) both;
+  animation: float-in 0.28s var(--ease-out) both;
 }
 .thinking .d {
   width: 4px;
@@ -2068,9 +2053,9 @@ body,
   inset: 0;
   z-index: 80;
   grid-area: unset;
-  background: rgba(0, 0, 0, 0.55);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background: rgba(0, 0, 0, 0.62);
+  backdrop-filter: var(--blur-scrim);
+  -webkit-backdrop-filter: var(--blur-scrim);
   display: flex;
   align-items: center;
   justify-content: center;

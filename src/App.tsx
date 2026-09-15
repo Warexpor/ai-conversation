@@ -164,7 +164,9 @@ function App() {
         .join(" ")}
       style={{ zoom }}
     >
-      <StageField paused={settingsOpen || (railOpen && narrow)} />
+      {/* Pause lacquer only when chrome fully covers the stage (narrow overlay).
+          Desktop Settings leaves the main column open — keep grain moving there. */}
+      <StageField paused={narrow && (settingsOpen || railOpen)} />
       <a className="skip-link" href="#main">
         Skip to transcript
       </a>

@@ -369,9 +369,7 @@ function ChatView({
                     config={config}
                     showThoughtsUi={showThoughtsUi}
                     onDelete={onDeleteMessage}
-                    enter={
-                      !virtualize || idx >= messages.length - 1
-                    }
+                    enter={idx === messages.length - 1}
                   />
                 </div>
               );
