@@ -47,6 +47,19 @@ function App() {
   const [zoom, setZoom] = useState(readZoom);
   const [zoomMsg, setZoomMsg] = useState("");
   const zoomTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const [narrow, setNarrow] = useState(
+    () =>
+      typeof window !== "undefined" &&
+      window.matchMedia("(max-width: 900px)").matches,
+  );
+
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 900px)");
+    const onChange = () => setNarrow(mq.matches);
+    onChange();
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
 
   useEffect(() => writeBoolPref(PREF_KEYS.railOpen, railOpen), [railOpen]);
   useEffect(
@@ -151,7 +164,7 @@ function App() {
         .join(" ")}
       style={{ zoom }}
     >
-      <StageField />
+      <StageField paused={settingsOpen || (railOpen && narrow)} />
       <a className="skip-link" href="#main">
         Skip to transcript
       </a>
@@ -194,7 +207,7 @@ function App() {
         <div className="brand">
           <SlashMark className="brand-logo" size={24} />
           <div className="brand-text">
-            <p className="brand-mark">AI Conversation</p>
+            <p className="brand-mark">AI ConvoIR</p>
             <span className="topbar-sub">
               {config
                 ? agentNames.filter(Boolean).join(" · ")

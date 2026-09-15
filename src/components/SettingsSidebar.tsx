@@ -523,7 +523,7 @@ export default function SettingsSidebar({
           {saved ? "Saved" : "Save"}
         </button>
         <p className="about-line">
-          AI Conversation <span>v2.0</span>
+          AI ConvoIR <span>v2.0</span>
         </p>
         <p className="field-hint settings-save-hint">
           Close keeps your changes. Save stays on this panel.

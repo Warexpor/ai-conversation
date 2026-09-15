@@ -1,5 +1,4 @@
-import { memo, useEffect, useRef } from "react";
-import { isScrollBusy, onScrollBusy } from "../lib/scrollBusy";
+import { useEffect, useRef } from "react";
 
 const VERT = `
 attribute vec2 a_pos;
@@ -57,10 +56,9 @@ void main() {
 }
 `;
 
-/** Lacquer under glass: short intro, then freeze. A 60fps loop under backdrop-filter
- *  forces every glass surface to re-blur every frame → steady low UI FPS on WebKit. */
-const INTRO_MS = 2400;
-const FRAME_MS = 200;
+/** Cap lacquer refresh — enough motion, far cheaper than uncapped RAF. */
+const TARGET_FPS = 24;
+const FRAME_MS = 1000 / TARGET_FPS;
 
 function compile(gl: WebGLRenderingContext, type: number, src: string) {
   const sh = gl.createShader(type);
@@ -74,9 +72,31 @@ function compile(gl: WebGLRenderingContext, type: number, src: string) {
   return sh;
 }
 
-function StageField() {
+function maxDpr(): number {
+  const raw = window.devicePixelRatio || 1;
+  const conn = (
+    navigator as Navigator & {
+      connection?: { saveData?: boolean };
+    }
+  ).connection;
+  const lowPower =
+    window.matchMedia("(prefers-reduced-transparency: reduce)").matches ||
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches ||
+    conn?.saveData === true;
+  return Math.min(raw, lowPower ? 1 : 1.25);
+}
+
+interface Props {
+  /** Freeze lacquer when chrome covers most of the stage (rail / settings). */
+  paused?: boolean;
+}
+
+export default function StageField({ paused = false }: Props) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const pausedRef = useRef(paused);
+  const syncRef = useRef<(() => void) | null>(null);
+  pausedRef.current = paused;
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -91,8 +111,6 @@ function StageField() {
         stencil: false,
         premultipliedAlpha: false,
         powerPreference: "low-power",
-        desynchronized: true,
-        preserveDrawingBuffer: false,
       }) ||
       (canvas.getContext("experimental-webgl", {
         alpha: false,
@@ -130,121 +148,79 @@ function StageField() {
     const uMotion = gl.getUniformLocation(prog, "u_motion");
 
     const motionMq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const transparencyMq = window.matchMedia(
+      "(prefers-reduced-transparency: reduce)",
+    );
     let raf = 0;
-    let timer: ReturnType<typeof setTimeout> | null = null;
-    let scrolling = isScrollBusy();
-    let frozen = false;
-    let freezeAt = 0;
+    let lastDraw = 0;
     const start = performance.now();
 
-    const canAnimate = () =>
-      !frozen &&
+    const animating = () =>
       !document.hidden &&
       !motionMq.matches &&
-      !scrolling;
+      !transparencyMq.matches &&
+      !pausedRef.current;
 
     const resize = () => {
-      const dpr = Math.min(window.devicePixelRatio || 1, 1);
+      const dpr = maxDpr();
       const w = Math.max(1, Math.floor(wrap.clientWidth * dpr));
       const h = Math.max(1, Math.floor(wrap.clientHeight * dpr));
       if (canvas.width !== w || canvas.height !== h) {
         canvas.width = w;
         canvas.height = h;
         gl.viewport(0, 0, w, h);
-        return true;
       }
-      return false;
     };
 
-    const draw = (now: number, motion: boolean) => {
-      const t = frozen ? freezeAt : (now - start) * 0.001;
+    const draw = (now: number, motion: number) => {
+      resize();
       gl.uniform2f(uRes, canvas.width, canvas.height);
-      gl.uniform1f(uTime, t);
-      gl.uniform1f(uMotion, motion ? 1 : 0);
+      gl.uniform1f(uTime, (now - start) * 0.001);
+      gl.uniform1f(uMotion, motion);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
+      lastDraw = now;
     };
 
-    const freeze = (now: number) => {
-      if (frozen) return;
-      frozen = true;
-      freezeAt = (now - start) * 0.001;
-      draw(now, true);
+    const loop = (now: number) => {
+      if (!animating()) {
+        raf = 0;
+        draw(now, 0);
+        return;
+      }
+      if (now - lastDraw >= FRAME_MS) draw(now, 1);
+      raf = requestAnimationFrame(loop);
     };
 
-    const stopLoop = () => {
+    const sync = () => {
       if (raf) {
         cancelAnimationFrame(raf);
         raf = 0;
       }
-      if (timer != null) {
-        clearTimeout(timer);
-        timer = null;
+      if (animating()) {
+        raf = requestAnimationFrame(loop);
+      } else {
+        draw(performance.now(), 0);
       }
     };
-
-    const schedule = () => {
-      if (!canAnimate() || raf || timer != null) return;
-      timer = setTimeout(() => {
-        timer = null;
-        raf = requestAnimationFrame((now) => {
-          raf = 0;
-          if (!canAnimate()) {
-            draw(now, false);
-            return;
-          }
-          if (now - start >= INTRO_MS) {
-            freeze(now);
-            return;
-          }
-          draw(now, true);
-          schedule();
-        });
-      }, FRAME_MS);
-    };
-
-    const onVis = () => {
-      if (document.hidden || motionMq.matches || scrolling) {
-        stopLoop();
-        draw(performance.now(), false);
-        return;
-      }
-      if (frozen) {
-        draw(performance.now(), true);
-        return;
-      }
-      schedule();
-    };
-
-    resize();
-    if (motionMq.matches) {
-      frozen = true;
-      freezeAt = 0;
-      draw(performance.now(), false);
-    } else {
-      draw(performance.now(), true);
-      schedule();
-    }
+    syncRef.current = sync;
 
     const ro = new ResizeObserver(() => {
-      if (!resize()) return;
-      draw(performance.now(), frozen || !motionMq.matches);
+      if (!raf) draw(performance.now(), animating() ? 1 : 0);
     });
     ro.observe(wrap);
 
-    const unscroll = onScrollBusy((v) => {
-      scrolling = v;
-      onVis();
-    });
-
-    document.addEventListener("visibilitychange", onVis);
-    motionMq.addEventListener("change", onVis);
+    document.addEventListener("visibilitychange", sync);
+    motionMq.addEventListener("change", sync);
+    transparencyMq.addEventListener("change", sync);
+    sync();
 
     return () => {
-      stopLoop();
+      syncRef.current = null;
+      if (raf) cancelAnimationFrame(raf);
       ro.disconnect();
-      unscroll();
-      document.removeEventListener("visibilitychange", onVis);
-      motionMq.removeEventListener("change", onVis);
+      document.removeEventListener("visibilitychange", sync);
+      motionMq.removeEventListener("change", sync);
+      transparencyMq.removeEventListener("change", sync);
       gl.deleteProgram(prog);
       gl.deleteShader(vs);
       gl.deleteShader(fs);
@@ -252,11 +228,13 @@ function StageField() {
     };
   }, []);
 
+  useEffect(() => {
+    syncRef.current?.();
+  }, [paused]);
+
   return (
     <div className="stage" ref={wrapRef} aria-hidden>
       <canvas ref={canvasRef} />
     </div>
   );
 }
-
-export default memo(StageField);
