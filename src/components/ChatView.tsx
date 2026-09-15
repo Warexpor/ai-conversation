@@ -279,9 +279,8 @@ function ChatView({
     return (
       <div className="empty">
         <div className="empty-hero">
-          <SlashMark className="empty-logo" size={48} />
-          <div className="empty-badge">OpenCode Go</div>
-          <h2>Start a thread</h2>
+          <SlashMark className="empty-logo" size={56} />
+          <h2 className="empty-brand">AI ConvoIR</h2>
           <p>
             {roster} take turns.{" "}
             {needsKey
@@ -370,9 +369,7 @@ function ChatView({
                     config={config}
                     showThoughtsUi={showThoughtsUi}
                     onDelete={onDeleteMessage}
-                    enter={
-                      !virtualize || idx >= messages.length - 1
-                    }
+                    enter={idx === messages.length - 1}
                   />
                 </div>
               );

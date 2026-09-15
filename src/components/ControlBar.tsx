@@ -154,7 +154,7 @@ function ControlBar({
               </span>
             </>
           )}
-          {tokenPct >= 50 && (
+          {tokenPct >= 65 && (
             <span className="ctx-bar" title="How full the conversation is">
               <span className="ctx-pct" style={{ color: tokenColor }}>
                 {tokenPct}%

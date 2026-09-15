@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "AI Conversation",
+  "productName": "AI ConvoIR",
   "version": "2.0.0",
   "identifier": "com.aiconversation.app",
   "build": {
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "AI Conversation",
+        "title": "AI ConvoIR",
         "width": 1280,
         "height": 840,
         "minWidth": 880,
@@ -34,8 +34,8 @@
     "active": true,
     "targets": "all",
     "category": "Productivity",
-    "shortDescription": "Let 2–3 voices take turns on one thread",
-    "longDescription": "Desktop multi-agent conversation app. OpenCode Go, Muse Spark 1.3 contributor, streaming, step/auto modes, and saved chats.",
+    "shortDescription": "AI ConvoIR — let 2–3 voices take turns on one thread",
+    "longDescription": "AI ConvoIR is a desktop multi-agent conversation app. OpenCode Go, Muse Spark 1.3 contributor, streaming, step/auto modes, and saved chats.",
     "icon": [
       "icons/icon.png",
       "icons/icon.ico",

@@ -9,8 +9,9 @@
   --panel: rgba(28, 28, 28, 0.72);
   --panel-2: rgba(34, 34, 34, 0.58);
   --elev: rgba(38, 38, 38, 0.78);
-  --line: rgba(255, 255, 255, 0.09);
-  --line-2: rgba(255, 255, 255, 0.16);
+  /* Hairlines a touch brighter — WebKitGTK softens borders on dark lacquer. */
+  --line: rgba(255, 255, 255, 0.12);
+  --line-2: rgba(255, 255, 255, 0.2);
   --text: #ececec;
   --text-2: #c8c8c8;
   --mute: #8f8f8f;
@@ -27,11 +28,15 @@
   --font-read: "Inter", system-ui, sans-serif;
   --mono: "JetBrains Mono", ui-monospace, monospace;
   --hairline: 1px solid var(--line);
-  --glass: rgba(18, 18, 18, 0.52);
-  --glass-strong: rgba(14, 14, 14, 0.78);
-  --blur: blur(28px) saturate(145%);
-  --shine: inset 0 1px 0 rgba(255, 255, 255, 0.1);
-  --glow: 0 16px 44px rgba(0, 0, 0, 0.22);
+  /* Glass hierarchy: primary chrome can blur; secondary panels stay opaque.
+     Opacities skewed high so text stays legible if blur is weak/no-op (GTK). */
+  --glass: rgba(16, 16, 16, 0.78);
+  --glass-strong: rgba(14, 14, 14, 0.96);
+  --blur: blur(14px) saturate(130%);
+  --blur-float: blur(12px) saturate(130%);
+  --blur-scrim: blur(8px);
+  --shine: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  --glow: 0 16px 44px rgba(0, 0, 0, 0.28);
   --btn-face: #f3f3f3;
   --btn-face-2: #dcdcdc;
   /* Motion — present, not showy */
@@ -226,8 +231,8 @@ body,
     width: min(280px, 85vw);
     border-right: var(--hairline);
     background: var(--glass-strong);
-    backdrop-filter: var(--blur);
-    -webkit-backdrop-filter: var(--blur);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
     transform: translateX(-105%);
     pointer-events: none;
     transition: transform var(--panel-ease);
@@ -244,9 +249,9 @@ body,
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.45);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
     border: none;
     padding: 0;
     cursor: pointer;
@@ -265,12 +270,12 @@ body,
   }
 }
 
-/* left rail */
+/* left rail — opaque panel, no blur stack over the stage */
 .rail {
   border-right: var(--hairline);
-  background: var(--glass);
-  backdrop-filter: var(--blur);
-  -webkit-backdrop-filter: var(--blur);
+  background: var(--glass-strong);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
   box-shadow: var(--shine);
   display: flex;
   flex-direction: column;
@@ -637,10 +642,10 @@ body,
 }
 .topbar h1,
 .brand-mark {
-  font-size: 14px;
-  font-weight: 400;
+  font-size: 16px;
+  font-weight: 500;
   color: var(--text);
-  letter-spacing: -0.03em;
+  letter-spacing: -0.04em;
   line-height: 1.15;
   margin: 0;
 }
@@ -789,10 +794,10 @@ body,
   margin-inline: -1px;
 }
 .btn:hover:not(:disabled) {
-  transform: translateY(-1px);
+  /* Color/border only — lift fights backdrop-filter compositing on WebKitGTK. */
 }
 .btn:active:not(:disabled) {
-  transform: translateY(0.5px) scale(0.985);
+  transform: scale(0.985);
 }
 .btn:disabled {
   cursor: not-allowed;
@@ -836,12 +841,11 @@ body,
   padding: 0 12px 0 10px;
   gap: 7px;
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.045);
+  background: rgba(255, 255, 255, 0.06);
   color: var(--text-2);
-  border-color: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.14);
   box-shadow: var(--shine);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  /* No per-control blur — chrome sits on already-glass topbar/dock. */
 }
 .btn-chrome:hover:not(:disabled) {
   color: var(--text);
@@ -878,30 +882,26 @@ body,
   gap: 7px;
 }
 .btn-ghost {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(255, 255, 255, 0.05);
   color: var(--text-2);
-  border-color: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.12);
   box-shadow: var(--shine);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
 }
 .btn-ghost:hover:not(:disabled) {
   color: var(--text);
-  border-color: rgba(255, 255, 255, 0.18);
-  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.09);
 }
 .btn-ghost[aria-pressed="true"] {
   color: var(--text);
   border-color: rgba(255, 255, 255, 0.38);
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.09);
 }
 .btn-danger {
-  background: rgba(255, 95, 87, 0.1);
+  background: rgba(255, 95, 87, 0.12);
   color: var(--danger);
-  border-color: rgba(255, 95, 87, 0.38);
+  border-color: rgba(255, 95, 87, 0.42);
   box-shadow: var(--shine);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
 }
 .btn-danger:hover:not(:disabled) {
   background: rgba(255, 95, 87, 0.18);
@@ -999,11 +999,9 @@ body,
 @keyframes msg-in {
   from {
     opacity: 0;
-    transform: translateY(8px);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
   }
 }
 .msg-avatar {
@@ -1055,13 +1053,21 @@ body,
   font-family: var(--font);
 }
 .msg-live {
+  /* Kept for any residual markup; streaming uses caret only. */
   font-size: 11px;
   color: var(--live);
   font-family: var(--font);
   font-weight: 500;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  animation: pulse 1.5s var(--ease-soft) infinite;
+}
+.thoughts-pending {
+  margin-left: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--mute);
+  text-transform: none;
 }
 .msg-actions {
   margin-left: auto;
@@ -1151,17 +1157,8 @@ body,
   box-shadow: var(--shine);
 }
 .msg.streaming .msg-avatar {
-  box-shadow: 0 0 0 1px rgba(245, 78, 0, 0.45), 0 0 18px rgba(245, 78, 0, 0.22);
-  animation: live-ring 2.4s var(--ease-soft) infinite;
-}
-@keyframes live-ring {
-  0%,
-  100% {
-    box-shadow: 0 0 0 1px rgba(245, 78, 0, 0.32), 0 0 10px rgba(245, 78, 0, 0.1);
-  }
-  50% {
-    box-shadow: 0 0 0 1px rgba(245, 78, 0, 0.62), 0 0 20px rgba(245, 78, 0, 0.24);
-  }
+  /* Static live ring — caret is the motion signal. */
+  box-shadow: 0 0 0 1px rgba(245, 78, 0, 0.5), 0 0 12px rgba(245, 78, 0, 0.16);
 }
 
 /* empty */
@@ -1175,66 +1172,51 @@ body,
 .empty-hero {
   width: 100%;
   max-width: 440px;
-  padding: 34px 28px 22px;
+  padding: 36px 28px 22px;
   border-radius: 26px;
   background: var(--glass);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  backdrop-filter: blur(36px) saturate(155%);
-  -webkit-backdrop-filter: blur(36px) saturate(155%);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  backdrop-filter: var(--blur-float);
+  -webkit-backdrop-filter: var(--blur-float);
   box-shadow: var(--shine), var(--glow);
   animation: hero-in var(--dur-slow) var(--ease-out) both;
 }
 @keyframes hero-in {
   from {
     opacity: 0;
-    transform: translateY(16px) scale(0.985);
   }
   to {
     opacity: 1;
-    transform: translateZ(0);
   }
 }
 .empty-logo {
   display: block;
-  width: 48px;
-  height: 48px;
-  margin: 0 auto 10px;
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 14px;
   object-fit: contain;
   filter: drop-shadow(0 10px 28px rgba(0, 0, 0, 0.4));
 }
+.empty-brand,
 .empty-hero h2 {
-  font-size: 34px;
-  font-weight: 400;
-  letter-spacing: -0.05em;
-  margin: 0 0 10px;
+  font-size: 36px;
+  font-weight: 500;
+  letter-spacing: -0.055em;
+  margin: 0 0 12px;
   text-align: center;
-  line-height: 1.08;
+  line-height: 1.05;
+  color: var(--text);
 }
 .empty-hero > p {
   text-align: center;
   color: var(--mute);
-  font-size: 15px;
+  font-size: 14px;
   line-height: 1.5;
-  margin: 0 0 18px;
+  margin: 0 0 20px;
   text-wrap: pretty;
 }
-.empty-badge {
-  display: flex;
-  justify-content: center;
-  margin: 0 auto 14px;
-  width: fit-content;
-  padding: 4px 10px;
-  border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.04);
-  color: var(--text-2);
-  font-size: 11px;
-  font-weight: 500;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
 .empty-box {
-  background: transparent;
+  background: rgba(0, 0, 0, 0.22);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 16px;
   overflow: hidden;
@@ -1333,10 +1315,10 @@ body,
 }
 .jump-latest:hover {
   border-color: var(--line-2);
-  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.08);
 }
 .jump-latest:active {
-  transform: translateY(0);
+  background: rgba(255, 255, 255, 0.06);
 }
 .jump-latest-space {
   flex-shrink: 0;
@@ -1359,11 +1341,11 @@ body,
   gap: 8px;
   align-items: center;
   background: var(--glass);
-  backdrop-filter: var(--blur);
-  -webkit-backdrop-filter: var(--blur);
+  backdrop-filter: var(--blur-float);
+  -webkit-backdrop-filter: var(--blur-float);
   border: var(--hairline);
   border-radius: 999px;
-  padding: 6px 6px 6px 16px;
+  padding: 5px 5px 5px 14px;
   box-shadow: var(--shine);
   transition:
     border-color var(--dur-fast) var(--ease-soft),
@@ -1401,8 +1383,8 @@ body,
   color: var(--text-2);
   font-size: 12px;
   cursor: pointer;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
   display: inline-flex;
   align-items: center;
   gap: 7px;
@@ -1417,7 +1399,6 @@ body,
   color: var(--text);
   border-color: rgba(255, 255, 255, 0.3);
   background: rgba(255, 255, 255, 0.07);
-  transform: translateY(-1px);
 }
 .hint-toggle:disabled {
   opacity: 0.4;
@@ -1429,45 +1410,39 @@ body,
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin: 10px 16px 14px;
-  padding: 10px 12px;
+  gap: 8px;
+  margin: 6px 16px 12px;
+  padding: 8px 10px;
   border: var(--hairline);
-  border-radius: 20px;
+  border-radius: 18px;
   background: var(--glass);
-  backdrop-filter: var(--blur);
-  -webkit-backdrop-filter: var(--blur);
+  backdrop-filter: var(--blur-float);
+  -webkit-backdrop-filter: var(--blur-float);
   box-shadow: var(--shine), var(--glow);
-  animation: dock-in 0.42s var(--ease-out) both;
+  animation: dock-in 0.36s var(--ease-out) both;
 }
 @keyframes dock-in {
   from {
     opacity: 0;
-    transform: translateY(12px);
   }
   to {
     opacity: 1;
-    transform: translateZ(0);
   }
 }
 @keyframes composer-in {
   from {
     opacity: 0;
-    transform: translateY(8px) scale(0.992);
   }
   to {
     opacity: 1;
-    transform: translateZ(0);
   }
 }
 @keyframes float-in {
   from {
     opacity: 0;
-    transform: translateY(8px) scale(0.96);
   }
   to {
     opacity: 1;
-    transform: translateY(0) scale(1);
   }
 }
 .dock-menu {
@@ -1563,12 +1538,12 @@ body,
   width: 44px;
 }
 
-/* settings panel */
+/* settings panel — opaque secondary chrome, no blur over the stage */
 .settings {
   border-left: var(--hairline);
-  background: var(--glass);
-  backdrop-filter: var(--blur);
-  -webkit-backdrop-filter: var(--blur);
+  background: var(--glass-strong);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
   box-shadow: var(--shine);
   display: flex;
   flex-direction: column;
@@ -2007,9 +1982,7 @@ body,
   gap: 8px;
   padding: 8px 16px;
   border-radius: 999px;
-  background: var(--glass);
-  backdrop-filter: var(--blur);
-  -webkit-backdrop-filter: var(--blur);
+  background: var(--glass-strong);
   border: var(--hairline);
   color: var(--mute);
   font-size: 12px;
@@ -2018,7 +1991,7 @@ body,
   letter-spacing: 0.02em;
   text-transform: none;
   box-shadow: var(--shine);
-  animation: float-in 0.36s var(--ease-out) both;
+  animation: float-in 0.28s var(--ease-out) both;
 }
 .thinking .d {
   width: 4px;
@@ -2080,9 +2053,9 @@ body,
   inset: 0;
   z-index: 80;
   grid-area: unset;
-  background: rgba(0, 0, 0, 0.55);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background: rgba(0, 0, 0, 0.62);
+  backdrop-filter: var(--blur-scrim);
+  -webkit-backdrop-filter: var(--blur-scrim);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2379,7 +2352,7 @@ body,
     font-size: 11px;
   }
   .brand-mark {
-    font-size: 13px;
+    font-size: 15px;
   }
   .composer {
     padding: 8px 10px 0;
